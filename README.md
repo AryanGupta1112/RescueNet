@@ -6,7 +6,6 @@
   <b>An Offline-First Mobile System for Disaster Zone Coordination, Mapping & Survivor Logging</b><br/>
   Built with ❤️ using <b>Android Studio</b>, <b>Leaflet.js</b>, <b>OpenStreetMap</b>, and <b>BLE Sync</b>  
   <br/><br/>
-  <img src="https://img.shields.io/badge/Status-Patent%20Filed-orange?style=for-the-badge&logo=google-scholar&logoColor=white"/>
   <img src="https://img.shields.io/badge/Platform-Android-3DDC84?style=for-the-badge&logo=android&logoColor=white"/>
   <img src="https://img.shields.io/badge/Technology-Offline%20Sync%20%26%20Mapping-blue?style=for-the-badge&logo=gpsdot&logoColor=white"/>
   <img src="https://img.shields.io/badge/Open%20Source-Yes-brightgreen?style=for-the-badge&logo=opensourceinitiative&logoColor=white"/>
