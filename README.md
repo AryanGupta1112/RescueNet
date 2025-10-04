@@ -43,7 +43,7 @@ Developed using open-source technologies, it provides **real-time local synchron
 
 ## 📸 Screenshots
 <p align="center">
-  <img src="app/src/Screenshots/1.jpg" width="50"/>
+  <img src="app/src/Screenshots/1.png" width="200"/>
 </p>
 <p align="center">
   <i>*(Additional screenshots available in the `/Screenshots` folder.)*</i>
