@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <!-- Lock the viewport to the device screen -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
+    <title>RescueNet - Disaster Relief Coordinator</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css"/>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+
+    <style>
+        :root {
+          --primary:#2563eb;--primary-dark:#1d4ed8;--secondary:#64748b;--accent:#06b6d4;
+          --success:#10b981;--warning:#f59e0b;--danger:#ef4444;
+          --background:#0f172a;--surface:#1e293b;--surface-light:#334155;
+          --text-primary:#f8fafc;--text-secondary:#cbd5e1;--text-muted:#94a3b8;--border:#475569;
+          --shadow:rgba(0,0,0,.25);--shadow-light:rgba(0,0,0,.1);
+        }
+        /*  Scope orange + black theme ONLY to Auth (login/signup) and Dashboard */
+
+        #splash{
+        --background: #000000;
+        --accent: #0a0a0a
+        }
+
+        #loginPage, #signupPage, #dashboard {
+          --primary: #f97316;        /* orange */
+          --primary-dark: #ea580c;   /* deeper orange */
+          --accent: #fb923c;         /* link/orange accent */
+          --background: #000000;     /* black */
+          --surface: #0a0a0a;        /* near-black */
+          --surface-light: #171717;  /* dark gray */
+          --text-primary: #fafafa;   /* off-white */
+          --text-secondary: #e5e7eb; /* light gray */
+          --text-muted: #a3a3a3;     /* muted gray */
+          --border: #262626;         /* subtle dark border */
+        }
+        *{box-sizing:border-box;margin:0;padding:0}
+        /* Lock the page; no document scroll */
+        html,body{
+          position:fixed; inset:0;
+          width:100%; height:100%;
+          font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+          background:var(--background); color:var(--text-primary);
+          overflow:hidden; overscroll-behavior:none; -webkit-text-size-adjust:100%;
+          touch-action: manipulation;
+        }
+
+        /* Splash (kept; remove if you want no intro) */
+        #splash{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--background) 0%,var(--accent) 100%);z-index:1000;color:var(--text-primary);animation:splashFadeOut .8s 2s ease-in forwards}
+        #splash img{width:120px;height:120px;margin-bottom:24px;filter:drop-shadow(0 8px 16px rgba(0,0,0,.3))}
+        #splash .splash-content{text-align:center}
+        #splash h1{font-size:32px;font-weight:700;margin-bottom:8px}
+        #splash p{font-size:18px;opacity:.9}
+        @keyframes splashFadeOut{to{opacity:0;transform:scale(.95)}}
+
+        /* Auth */
+        #loginPage,#signupPage{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--background) 0%,var(--surface) 100%);z-index:900}
+        #loginForm,#signupForm{width:360px;max-width:92vw;padding:40px;border-radius:20px;background:var(--surface);box-shadow:0 20px 40px var(--shadow);text-align:center;border:1px solid var(--border)}
+        #loginForm h2,#signupForm h2{color:var(--primary);font-size:28px;font-weight:600;margin-bottom:24px}
+        .form-group{margin-bottom:16px;text-align:left}
+        .form-group label{display:block;margin-bottom:8px;color:var(--text-secondary);font-weight:500;font-size:14px}
+        #loginForm input,#signupForm input{width:100%;padding:14px;border:2px solid var(--border);border-radius:12px;background:var(--surface-light);color:var(--text-primary);font-size:16px;outline:none}
+        #loginForm input:focus,#signupForm input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+        #loginForm button,#signupForm button{width:100%;padding:14px;border:0;border-radius:12px;color:var(--text-primary);cursor:pointer;background:linear-gradient(135deg,var(--primary) 0%,var(--primary-dark) 100%);font-size:16px;font-weight:600;margin-top:8px}
+        .auth-link{color:var(--accent);text-decoration:none}
+        .auth-message{padding:12px;border-radius:8px;margin-bottom:16px;font-weight:500;display:none}
+
+        /* Dashboard */
+        #dashboard{display:none;flex-direction:column;align-items:center;width:100%;height:100%;max-width:480px;margin:auto;background:var(--surface);border-radius:24px;box-shadow:0 25px 50px var(--shadow);padding:40px 30px;border:1px solid var(--border)}
+        #dashboard h1{font-size:32px;color:var(--primary);margin:0 0 8px}
+        #dashboard h2{font-size:16px;color:var(--text-secondary);margin:0 0 24px}
+        .nav-button{display:flex;align-items:center;justify-content:flex-start;width:100%;max-width:420px;margin:12px 0;padding:18px;background:linear-gradient(135deg,var(--surface-light) 0%,var(--surface) 100%);border:1px solid var(--border);border-radius:16px;color:var(--text-primary);font-size:16px;font-weight:500;cursor:pointer;box-shadow:0 4px 12px var(--shadow-light)}
+        .nav-button img{width:28px;height:28px;margin-right:14px;filter:brightness(0) invert(1)}
+        #footer{position:absolute;bottom:0;left:0;width:100%;font-size:14px;color:var(--text-muted);background:var(--surface);padding:16px 0;text-align:center;border-top:1px solid var(--border)}
+
+        /* Map */
+        #mapContainer{display:none;position:relative;height:100%;width:100%}
+        #map{position:absolute;inset:0;height:100%;width:100%}
+        /* We’ll only use the bottom-right zoom control */
+        .leaflet-control-zoom{border-radius:12px!important;overflow:hidden;box-shadow:0 8px 20px var(--shadow)!important;z-index:450!important}
+
+        /* Sidebar */
+        #sidebar{position:absolute;top:0;left:0;width:320px;max-width:86vw;height:100%;background:var(--surface);color:var(--text-primary);padding:24px;transform:translateX(-100%);transition:transform .35s ease;z-index:600;overflow-y:auto;box-shadow:4px 0 20px var(--shadow);border-right:1px solid var(--border)}
+        #sidebar.visible{transform:translateX(0)}
+        #closeSidebar{background:none;border:0;color:var(--text-secondary);font-size:20px;float:right;cursor:pointer;padding:8px;border-radius:8px}
+        /* Sidebar toggle button (TOP-LEFT) */
+        #openSidebar{position:absolute;top:20px;left:20px;background:var(--surface);color:var(--text-primary);border:1px solid var(--border);padding:12px;font-size:18px;cursor:pointer;border-radius:12px;z-index:650;box-shadow:0 4px 12px var(--shadow)}
+        #searchBox{width:100%;padding:14px;border:2px solid var(--border);border-radius:12px;background:var(--surface-light);color:var(--text-primary);font-size:16px;margin:8px 0 16px;outline:none}
+        #placeList{list-style:none}
+        #placeList li{padding:12px;border-bottom:1px solid var(--border);cursor:pointer;border-radius:8px;margin-bottom:4px}
+        #placeList li:hover{background:var(--surface-light)}
+
+        /* Coords badge */
+        #coordBadge{position:absolute;top:20px;left:50%;transform:translateX(-50%);z-index:640;background:rgba(30,41,59,.9);border:1px solid var(--border);padding:8px 12px;border-radius:999px;font-size:12px;color:var(--text-secondary)}
+
+        /* FABs (right) */
+        #fab{position:absolute;bottom:24px;right:24px;z-index:650;display:flex;flex-direction:column;gap:14px}
+        #fab button{background:var(--surface);color:var(--text-primary);border:1px solid var(--border);border-radius:50%;width:56px;height:56px;font-size:20px;cursor:pointer;box-shadow:0 4px 12px var(--shadow)}
+        #fab button.secondary{background:var(--secondary);border-color:var(--secondary)}
+        #fab button.success{background:var(--success);border-color:var(--success)}
+        #fab button.danger{background:var(--danger);border-color:var(--danger)}
+
+        /* Route info */
+        #routeInfo{position:absolute;bottom:120px;left:20px;background:var(--surface);color:var(--text-primary);padding:14px;z-index:640;display:none;box-shadow:0 8px 20px var(--shadow);border-radius:12px;border:1px solid var(--border);min-width:200px}
+
+        /* Net banner */
+        #netBanner{position:fixed;top:0;left:0;width:100%;padding:12px 20px;text-align:center;color:var(--text-primary);font-weight:500;z-index:700;background:var(--warning);display:none}
+
+        /* Log Drawer */
+        #logDrawer{position:absolute;right:-400px;top:0;height:100%;width:380px;max-width:86vw;background:var(--surface);color:var(--text-primary);z-index:625;box-shadow:-4px 0 20px var(--shadow);padding:24px;transition:right .35s ease;border-left:1px solid var(--border)}
+        #logDrawer.open{right:0}
+        #logDrawer h3{margin:0 0 16px;color:var(--primary);font-size:22px}
+        #logDrawer label{font-size:14px;color:var(--text-secondary);font-weight:500;margin:10px 0 6px;display:block}
+        #logDrawer input,#logDrawer select,#logDrawer textarea{width:100%;padding:12px;border-radius:10px;border:2px solid var(--border);background:var(--surface-light);color:var(--text-primary);font-size:14px;outline:none}
+        #logDrawer button{width:100%;padding:12px;border:0;border-radius:10px;background:var(--primary);color:var(--text-primary);font-size:14px;font-weight:500;cursor:pointer;margin:12px 0}
+        #logDrawer .closeBtn{background:var(--secondary)}
+        #logsList{margin-top:8px;max-height:40%;overflow:auto;border-top:1px solid var(--border);padding-top:12px}
+        .logItem{font-size:13px;border-bottom:1px solid var(--border);padding:10px 0;color:var(--text-secondary);line-height:1.4}
+
+        @media (max-width:768px){
+          #sidebar{width:280px}
+          #logDrawer{width:320px}
+          #fab button{width:52px;height:52px;font-size:18px}
+        }
+    </style>
+</head>
+<body>
+
+<!-- Net banner -->
+<div id="netBanner"></div>
+
+<!-- Splash -->
+<div id="splash">
+    <img src="rescuenetlogo.png" alt="RescueNet Logo"/>
+    <div class="splash-content">
+        <h1>RescueNet</h1><p>Disaster Relief Coordinator</p>
+    </div>
+</div>
+
+<!-- Login -->
+<div id="loginPage">
+    <div id="loginForm">
+        <h2>Welcome Back</h2>
+        <div id="loginMessage" class="auth-message"></div>
+        <div class="form-group"><label for="username">Username</label><input id="username" placeholder="Enter your username"></div>
+        <div class="form-group"><label for="password">Password</label><input id="password" type="password" placeholder="Enter your password"></div>
+        <button onclick="login()">Sign In</button>
+        <p style="margin-top:16px;color:var(--text-secondary)">No account? <a href="#" class="auth-link" onclick="showSignup()">Create one</a></p>
+    </div>
+</div>
+
+<!-- Signup -->
+<div id="signupPage">
+    <div id="signupForm">
+        <h2>Join RescueNet</h2>
+        <div id="signupMessage" class="auth-message"></div>
+        <div class="form-group"><label for="signupUsername">Username</label><input id="signupUsername" placeholder="Choose a username"></div>
+        <div class="form-group"><label for="signupPassword">Password</label><input id="signupPassword" type="password" placeholder="Create a password"></div>
+        <button onclick="signup()">Create Account</button>
+        <p style="margin-top:16px;color:var(--text-secondary)">Have an account? <a href="#" class="auth-link" onclick="showLogin()">Sign in</a></p>
+    </div>
+</div>
+
+<!-- Dashboard -->
+<div id="dashboard">
+    <h1>RescueNet</h1>
+    <h2>Professional disaster relief coordination platform</h2>
+    <button class="nav-button" onclick="navigateTo('map')">
+        <img src="https://img.icons8.com/ios-filled/50/ffffff/map.png" alt=""><span>Field Operations Map</span>
+    </button>
+    <button class="nav-button" onclick="navigateTo('settings')">
+        <img src="https://img.icons8.com/ios-filled/50/ffffff/settings.png" alt=""><span>System Preferences</span>
+    </button>
+    <button class="nav-button" onclick="navigateTo('help')">
+        <img src="https://img.icons8.com/ios-filled/50/ffffff/help.png" alt=""><span>Support & Documentation</span>
+    </button>
+    <div id="footer"><p>&copy; 2025 RescueNet • Disaster Relief Coordinator</p></div>
+</div>
+
+<!-- Map View -->
+<div id="mapContainer">
+    <!-- sidebar -->
+    <div id="sidebar">
+        <button id="closeSidebar" onclick="toggleSidebar()">✖</button>
+        <label for="searchBox"></label><input id="searchBox" placeholder="Search site/resource..." onkeyup="filterPlaces()">
+        <ul id="placeList"></ul>
+    </div>
+
+    <!-- coords pill -->
+    <div id="coordBadge">—</div>
+
+    <!-- map canvas -->
+    <div id="map"></div>
+
+    <!-- sidebar toggle (top-left) -->
+    <button id="openSidebar" onclick="toggleSidebar()" title="Search & Layers">☰</button>
+
+    <!-- fabs -->
+    <div id="fab">
+        <button onclick="centerOnCurrentLocation()" title="My Location">📍</button>
+        <button class="secondary" onclick="toggleRouting()" title="Navigation">🧭</button>
+        <button class="secondary" onclick="toggleLogDrawer()" title="Log Entry">📝</button>
+        <button class="success" onclick="zoneCheckIn()" title="Zone Check-in">✅</button>
+        <button onclick="openBlePanel()" title="Peer Sync">🔗</button>
+        <!-- Simulation toggle -->
+        <button id="simBtn" class="danger" onclick="toggleSimulation()" title="Simulate Disaster Location">🎯</button>
+        <button class="danger" onclick="exportJSON()" title="Export Data">⬇️</button>
+    </div>
+</div>
+
+<!-- Route info (floats above map) -->
+<div id="routeInfo">
+    <span id="distance"></span><br><span id="duration"></span>
+</div>
+
+<!-- Log Drawer -->
+<div id="logDrawer">
+    <h3>Log Survivor / Resource</h3>
+    <label for="logCategory">Category</label>
+    <select id="logCategory">
+        <option value="survivor">Survivor</option><option value="medical">Medical Aid</option>
+        <option value="food">Food/Water</option><option value="evac">Evacuation</option>
+        <option value="hazard">Hazard</option><option value="other">Other</option>
+    </select>
+    <label for="logCount">Count (if applicable)</label>
+    <input id="logCount" type="number" min="0" placeholder="e.g., 3"/>
+    <label for="logNotes">Notes</label>
+    <textarea id="logNotes" rows="3" placeholder="Short details..."></textarea>
+    <button onclick="saveLog()">Save Log at My Location</button>
+    <button class="closeBtn" onclick="toggleLogDrawer()">Close</button>
+    <div id="logsList"></div>
+</div>
+
+<script>
+    // --- Globals
+    let map, userMarker, currentLatLng, routingControl, routingEnabled=false, destinationMarker;
+    const poiMarkers = {};
+    let logs = JSON.parse(localStorage.getItem('dr_logs')||'[]');
+
+    // Real vs simulated location
+    let simulateDisaster = false;
+    let realLatLng = null;
+    const disasterName = 'Joshimath (Uttarakhand)';
+    // Joshimath coordinates (subsidence & flood aftermath area)
+    const disasterLatLng = [30.55588, 79.56655]; // :contentReference[oaicite:1]{index=1}
+
+    // Max zoom rules per layer name
+    let activeMaxZoom = 19;
+    const restrictedLayers = new Set(['OSM DE','Esri Satellite','Carto Light']);
+
+    // Icons
+    const redIcon = L.icon({iconUrl:'https://maps.google.com/mapfiles/ms/icons/red-dot.png',iconSize:[40,40],iconAnchor:[20,40],popupAnchor:[0,-34]});
+    const blueIcon = L.icon({iconUrl:'https://www.google.com/mapfiles/ms/icons/blue-dot.png',iconSize:[50,50],iconAnchor:[25,50],popupAnchor:[0,-42]});
+    const hazardIcon = L.icon({iconUrl:'https://maps.google.com/mapfiles/ms/icons/yellow-dot.png',iconSize:[40,40],iconAnchor:[20,40],popupAnchor:[0,-34]});
+
+    // Splash -> Login
+    setTimeout(()=>{document.getElementById('splash').style.display='none';document.getElementById('loginPage').style.display='flex';},2000);
+
+    // Auth helpers
+    function showLogin(){document.getElementById('signupPage').style.display='none';document.getElementById('loginPage').style.display='flex';}
+    function showSignup(){document.getElementById('loginPage').style.display='none';document.getElementById('signupPage').style.display='flex';}
+    function showMessage(id,msg,type){const el=document.getElementById(id);el.style.display='block';el.textContent=msg;el.style.background=type==='success'? 'var(--success)':type==='warning'?'var(--warning)':'var(--danger)';el.style.color='var(--text-primary)';setTimeout(()=>el.style.display='none',2500);}
+    function signup(){const u=signupUsername.value.trim(),p=signupPassword.value.trim(); if(u&&p){try{Android.saveCredentials(u,p);}catch(e){} showMessage('signupMessage','Account created. Please sign in.','success');showLogin();}else showMessage('signupMessage','Please fill in all fields.','danger');}
+    function login(){const u=username.value.trim(),p=password.value.trim(); let su='',sp=''; try{su=Android.getUsername();sp=Android.getPassword();}catch(e){} if(u===su&&p===sp){showMessage('loginMessage','Welcome!','success');setTimeout(()=>{loginPage.style.display='none';dashboard.style.display='flex';},800);}else showMessage('loginMessage','Invalid credentials. Sign up first.','danger');}
+
+    // Nav
+    function navigateTo(view){
+      if(view==='map'){ dashboard.style.opacity=0; setTimeout(()=>{dashboard.style.display='none'; mapContainer.style.display='block'; initMap();},300); }
+      else if(view==='settings'){ alert('Preferences coming soon.'); }
+      else if(view==='help'){ alert('Support coming soon.'); }
+    }
+
+    // Connectivity banner
+    function updateNetBanner(){ const b=netBanner; if(navigator.onLine){b.style.display='none';} else {b.textContent='You are offline. Map tiles & online routing may be limited.'; b.style.display='block';} }
+    window.addEventListener('online',updateNetBanner);
+    window.addEventListener('offline',updateNetBanner);
+
+    // Map init — single zoom control at bottom-right
+    function initMap(){
+      updateNetBanner();
+
+      const defaultLatLng=[26.8439,75.5652];
+      if(map){ return; }
+
+      map = L.map('map',{center:defaultLatLng,zoom:16,minZoom:3,zoomControl:false});
+
+      // Base layers
+      const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap contributors'}).addTo(map);
+      const osmHot = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OSM, HOT'});
+      const cartoDark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19,attribution:'&copy; CartoDB'});
+      const osmDE = L.tileLayer('https://{s}.tile.openstreetmap.de/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap, OSM.de'});
+      const esriSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Tiles &copy; Esri'});
+      const cartoLight = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{maxZoom:19,attribution:'&copy; CartoDB'});
+
+      const baseLayers = {
+        "OSM": osm,
+        "OSM HOT (Humanitarian)": osmHot,
+        "Carto Dark": cartoDark,
+        "OSM DE": osmDE,
+        "Esri Satellite": esriSat,
+        "Carto Light": cartoLight
+      };
+
+      L.control.layers(baseLayers,null,{collapsed:true}).addTo(map);
+      L.control.zoom({position:'bottomright'}).addTo(map); // only zoom control
+
+      // Clamp zoom when certain layers active
+      map.on('baselayerchange', (e) => {
+        const name = e.name || '';
+        const restricted = restrictedLayers.has(name);
+        activeMaxZoom = restricted ? 17 : 19;
+        if (map.getZoom() > activeMaxZoom) map.setZoom(activeMaxZoom);
+      });
+      // Also guard on zoom
+      map.on('zoomend', () => {
+        if (map.getZoom() > activeMaxZoom) map.setZoom(activeMaxZoom);
+      });
+
+      // Keep sidebar hidden initially
+      document.getElementById('sidebar').classList.remove('visible');
+
+      // POIs
+      const places=[
+        {name:"Relief Camp A",lat:26.8446,lng:75.5646,type:"shelter"},
+        {name:"Medical Tent",lat:26.8438,lng:75.5664,type:"medical"},
+        {name:"Water Point",lat:26.8422,lng:75.5655,type:"water"},
+        {name:"Supply Depot",lat:26.8422,lng:75.5638,type:"supply"},
+        {name:"Helipad (Temporary)",lat:26.8417,lng:75.5659,type:"evac"},
+        {name:"Command Center",lat:26.8412,lng:75.5649,type:"hq"},
+        {name:"Blocked Road",lat:26.8421,lng:75.5624,type:"blocked"},
+        {name:"Hazard Zone",lat:26.8406,lng:75.5620,type:"hazard"}
+      ];
+      const placeList=document.getElementById('placeList');
+      places.forEach(p=>{
+        const icon=(p.type==='hazard'||p.type==='blocked')?hazardIcon:redIcon;
+        const m=L.marker([p.lat,p.lng],{icon}).bindPopup(`${p.name} (${p.type})`);
+        poiMarkers[p.name.toLowerCase()]={marker:m,visible:false};
+        const li=document.createElement('li'); li.textContent=p.name; li.onclick=()=>togglePlaceMarker(p.name); placeList.appendChild(li);
+      });
+
+      // Routing
+      routingControl = L.Routing.control({
+        waypoints:[],
+        router:L.Routing.osrmv1({serviceUrl:'https://router.project-osrm.org/route/v1'}),
+        routeWhileDragging:true,showAlternatives:true,addWaypoints:true,draggableWaypoints:true,show:false
+      }).addTo(map);
+
+      routingControl.on('routesfound',e=>{
+        const r=e.routes[0];
+        distance.textContent='Distance: '+(r.summary.totalDistance/1000).toFixed(2)+' km';
+        duration.textContent='Duration: '+(r.summary.totalTime/60).toFixed(1)+' mins';
+        routeInfo.style.display='block';
+      });
+
+      // Click to set destination when routing enabled
+      map.on('click',e=>{
+        if(!routingEnabled) return;
+        const ll=e.latlng;
+        if(destinationMarker){ destinationMarker.setLatLng(ll).bindPopup('Destination').openPopup(); }
+        else{ destinationMarker=L.marker(ll,{icon:redIcon}).addTo(map).bindPopup('Destination').openPopup(); }
+        if(currentLatLng){ routingControl.setWaypoints([L.latLng(currentLatLng[0],currentLatLng[1]), ll]); }
+        else alert('Your current location is not available yet.');
+      });
+
+      // Render existing logs
+      renderLogMarkers();
+    }
+
+    // Sidebar
+    function toggleSidebar(){
+      const s=document.getElementById('sidebar');
+      s.classList.toggle('visible');
+    }
+    function filterPlaces(){
+      const q=searchBox.value.toLowerCase();
+      const items=placeList.getElementsByTagName('li');
+      for(let i=0;i<items.length;i++){ items[i].style.display = items[i].textContent.toLowerCase().includes(q)?'':'none'; }
+    }
+    function togglePlaceMarker(name){
+      const key=name.toLowerCase(),entry=poiMarkers[key]; if(!entry) return;
+      if(entry.visible){ map.removeLayer(entry.marker); entry.visible=false; }
+      else{ entry.marker.addTo(map); map.setView(entry.marker.getLatLng(),18); entry.marker.openPopup(); entry.visible=true; }
+    }
+
+    // ---- Location handling
+    function setCurrent(lat,lng,center=true){
+      currentLatLng=[lat,lng];
+      if(userMarker){ userMarker.setLatLng(currentLatLng).bindPopup(simulateDisaster ? (disasterName + ' — simulated') : 'You are here'); }
+      else{
+        userMarker=L.marker(currentLatLng,{icon:blueIcon}).addTo(map)
+          .bindPopup(simulateDisaster ? (disasterName + ' — simulated') : 'You are here');
+      }
+      if(center) map.setView(currentLatLng, Math.min(map.getZoom()||16, activeMaxZoom));
+      updateCoordBadge();
+      if(routingEnabled && destinationMarker){
+        routingControl.setWaypoints([L.latLng(lat,lng), destinationMarker.getLatLng()]);
+      }
+    }
+
+    // Called by Android with live GNSS
+    function updateLocation(lat,lng){
+      realLatLng=[lat,lng];
+      if(!simulateDisaster){
+        setCurrent(lat,lng,false);
+      }
+    }
+    window.updateLocation = updateLocation;
+
+    // Center button
+    function centerOnCurrentLocation(){
+      if(currentLatLng) map.setView(currentLatLng, Math.min(17, activeMaxZoom));
+      else alert('Location not available.');
+    }
+
+    // Simulation toggle
+    function toggleSimulation(){
+      simulateDisaster = !simulateDisaster;
+      const btn = document.getElementById('simBtn');
+      if(simulateDisaster){
+        btn.title = 'Simulation ON — tap to return to live';
+        btn.style.boxShadow = '0 0 0 3px rgba(239,68,68,.35)';
+        const [lat,lng] = disasterLatLng;
+        setCurrent(lat,lng,true);
+        if(userMarker){ userMarker.openPopup(); }
+      }else{
+        btn.title = 'Simulate Disaster Location';
+        btn.style.boxShadow = '';
+        if(realLatLng){ setCurrent(realLatLng[0], realLatLng[1], true); if(userMarker){ userMarker.openPopup(); } }
+      }
+    }
+
+    function updateCoordBadge(){
+      const el = document.getElementById('coordBadge');
+      if(!currentLatLng){ el.textContent = '—'; return; }
+      const [lat,lng]=currentLatLng;
+      el.textContent = `${simulateDisaster?'SIM':'LIVE'}: ${lat.toFixed(5)}, ${lng.toFixed(5)}${simulateDisaster?' • '+disasterName:''}`;
+    }
+
+    // Routing toggle
+    function toggleRouting(){
+      routingEnabled=!routingEnabled;
+      if(routingEnabled) alert('Routing enabled. Tap the map to set a destination.');
+      else{
+        routingControl.setWaypoints([]);
+        if(destinationMarker){ map.removeLayer(destinationMarker); destinationMarker=null; }
+        routeInfo.style.display='none';
+        alert('Routing disabled.');
+      }
+    }
+
+    // Logs
+    function toggleLogDrawer(){ logDrawer.classList.toggle('open'); refreshLogsList(); }
+    function saveLog(){
+      if(!currentLatLng){ alert('Current location not available.'); return; }
+      const entry={id:'log_'+Date.now(),ts:new Date().toISOString(),cat:logCategory.value,count:Number(logCount.value||0),notes:(logNotes.value||'').trim(),lat:currentLatLng[0],lng:currentLatLng[1]};
+      logs.push(entry); localStorage.setItem('dr_logs',JSON.stringify(logs)); renderSingleLogMarker(entry);
+      logCount.value=''; logNotes.value=''; refreshLogsList(); alert('Log saved locally.');
+    }
+    function refreshLogsList(){
+      logsList.innerHTML=''; [...logs].reverse().forEach(l=>{
+        const d=document.createElement('div'); d.className='logItem';
+        d.textContent=`[${new Date(l.ts).toLocaleString()}] ${l.cat}${l.count?(' x'+l.count):''} @ (${l.lat.toFixed(5)}, ${l.lng.toFixed(5)}) ${l.notes?('- '+l.notes):''}`;
+        logsList.appendChild(d);
+      });
+    }
+    function renderLogMarkers(){ logs.forEach(renderSingleLogMarker); }
+    function renderSingleLogMarker(l){
+      const icon=(l.cat==='hazard')?hazardIcon:redIcon;
+      L.marker([l.lat,l.lng],{icon}).addTo(map).bindPopup(`${l.cat.toUpperCase()}${l.count?(' x'+l.count):''}<br>${new Date(l.ts).toLocaleString()}<br>${l.notes||''}`);
+    }
+
+    // Zone check-in
+    function zoneCheckIn(){
+      if(!currentLatLng){ alert('Location not available.'); return; }
+      const entry={id:'checkin_'+Date.now(),ts:new Date().toISOString(),type:'checkin',lat:currentLatLng[0],lng:currentLatLng[1]};
+      logs.push(entry); localStorage.setItem('dr_logs',JSON.stringify(logs));
+      L.marker([entry.lat,entry.lng],{icon:redIcon}).addTo(map).bindPopup(`Checked-in<br>${new Date(entry.ts).toLocaleString()}`);
+      refreshLogsList(); alert('Checked in at current location.');
+    }
+
+    // Export
+    function exportJSON(){
+      const payload=JSON.stringify({device:safeGetDeviceId(),logs},null,2);
+      try{ Android.saveExport(payload); }catch(e){}
+      downloadText('dr_logs_export.json',payload);
+    }
+    function downloadText(filename,text){const a=document.createElement('a');a.href='data:application/json;charset=utf-8,'+encodeURIComponent(text);a.download=filename;a.style.display='none';document.body.appendChild(a);a.click();document.body.removeChild(a);}
+    function safeGetDeviceId(){ try{return Android.getDeviceId();}catch(e){return 'webview-device';} }
+
+    // BLE (hooks only; handled natively)
+    function openBlePanel(){
+      if(!confirm('Start BLE discovery to sync logs with a nearby device?')) return;
+      try{ AndroidBLE.startScan(); }catch(e){ alert('BLE scan not available.'); }
+      setTimeout(()=>{ if(confirm('Send my logs to the connected peer now?')) bleSendAll(); },1200);
+    }
+    function bleSendAll(){
+      const payload=JSON.stringify({device:safeGetDeviceId(),logs});
+      try{ AndroidBLE.send(payload); alert('Sent logs via BLE.'); }catch(e){ alert('BLE send failed.'); }
+    }
+    window.onBlePayload=function(jsonStr){
+      try{
+        const incoming=JSON.parse(jsonStr);
+        if(incoming && Array.isArray(incoming.logs)){
+          const mapById=new Map(logs.map(l=>[l.id,l]));
+          incoming.logs.forEach(l=>{ if(!mapById.has(l.id)) mapById.set(l.id,l); });
+          logs=[...mapById.values()];
+          localStorage.setItem('dr_logs',JSON.stringify(logs));
+          renderLogMarkers(); refreshLogsList();
+          alert('Merged logs from peer.');
+        }
+      }catch(err){ console.log('BLE payload parse error',err); }
+    };
+
+    // Sidebar default hidden at load
+    document.addEventListener('DOMContentLoaded', ()=>{
+      document.getElementById('sidebar').classList.remove('visible');
+    });
+</script>
+</body>
+</html>
