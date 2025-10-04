@@ -91,6 +91,6 @@ Developed as part of a **research-driven innovation initiative** at
 ---
 
 <p align="center">
-  <b>© 2025 RescueNet | Offline-First Disaster Response System</b><br/>
+  <b>RescueNet | Offline-First Disaster Response System</b><br/>
   <i>“Connecting responders when the world is disconnected.”</i>
 </p>
