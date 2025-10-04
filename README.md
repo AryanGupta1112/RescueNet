@@ -14,7 +14,7 @@
 ---
 
 ## 🧭 Overview
-**RescueNet** is an **AI-assisted, offline-first coordination tool** designed for **disaster response teams**, enabling efficient **mapping, survivor logging, and volunteer task management** in environments with poor or no internet connectivity.  
+**RescueNet** is an **offline-first coordination tool** designed for **disaster response teams**, enabling efficient **mapping, survivor logging, and volunteer task management** in environments with poor or no internet connectivity.  
 Developed using open-source technologies, it provides **real-time local synchronization** through **Bluetooth Low Energy (BLE)** and **QR-based data transfer**, ensuring continuity of operations even in remote disaster zones.
 
 ---
