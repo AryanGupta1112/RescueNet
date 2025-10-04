@@ -44,6 +44,18 @@ Developed using open-source technologies, it provides **real-time local synchron
 ## 📸 Screenshots
 <p align="center">
   <img src="app/src/Screenshots/1.png" width="200"/>
+  <img src="app/src/Screenshots/2.png" width="200"/>
+  <img src="app/src/Screenshots/4.png" width="200"/>
+</p>
+<p align="center">
+  <img src="app/src/Screenshots/5.png" width="200"/>
+  <img src="app/src/Screenshots/12.png" width="200"/>
+  <img src="app/src/Screenshots/16.png" width="200"/>
+</p>
+<p align="center">
+  <img src="app/src/Screenshots/17.png" width="200"/>
+  <img src="app/src/Screenshots/18.png" width="200"/>
+  <img src="app/src/Screenshots/19.png" width="200"/>
 </p>
 <p align="center">
   <i>*(Additional screenshots available in the `/Screenshots` folder.)*</i>
